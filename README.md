@@ -9,8 +9,6 @@ Instead of examining each report in isolation, it explores relationships between
 
 **ScamTrace AI focuses on explaining connections and prioritizing investigations rather than simply classifying a message as a scam.**
 
----
-
 ## 1. Problem Statement
 
 Scam reports often contain overlapping information, such as phone numbers, suspicious URLs, payment identifiers, and impersonated organizations. However, these details may be distributed across multiple reports, making it difficult to recognize connections when each incident is investigated independently.
