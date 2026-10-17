@@ -1,4 +1,6 @@
 # ScamTrace AI
+**Live Demo:** [Open ScamTrace AI] https://scamtraceai.streamlit.app
+
 ### Graph-Based Scam Investigation and Evidence Analysis
 
 ScamTrace AI is a graph-powered investigation tool that identifies potential connections between suspicious reports by analyzing shared phone numbers, URLs, payment handles, and impersonated brands.
@@ -154,7 +156,7 @@ The resulting dashboard provides a connected view of potential scam activity ins
 Clone the repository and enter the project directory:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/ScamTraceAI.git
+git clone https://github.com/14guptapriya/ScamTraceAI.git
 cd ScamTraceAI
 ```
 
