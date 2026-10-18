@@ -5,7 +5,11 @@ import networkx as nx
 import plotly.graph_objects as go
 
 from graph_db import get_graph
-from investigator import investigate_report
+from investigator import (
+    investigate_report,
+    find_connection_paths,
+    find_pattern_matches,
+)
 from evidence_engine import evaluate_evidence
 
 
@@ -177,6 +181,37 @@ with st.sidebar:
         list(report_options.keys()),
     )
     selected_id = report_options[selected_label]
+    st.divider()
+    st.subheader("Trace a connection")
+
+    target_options = {
+        label: report_id
+        for label, report_id in report_options.items()
+        if report_id != selected_id
+    }
+
+    target_label = st.selectbox(
+        "Target report",
+        list(target_options.keys()),
+        key="trace_target",
+    )
+
+    max_hops = st.slider(
+        "Maximum report-to-report hops",
+        min_value=1,
+        max_value=4,
+        value=3,
+    )
+
+    run_trace = st.button(
+        "Trace connection",
+        width="stretch",
+    )
+
+    run_patterns = st.button(
+        "Find pattern matches",
+        width="stretch",
+    )
 
     run_investigation = st.button(
         "Investigate report",
@@ -282,7 +317,79 @@ if result["connections"]:
     )
 else:
     st.write("No related reports were discovered.")
+st.divider()
+st.header("Advanced investigation")
 
+# Connection tracing
+if run_trace:
+    with st.spinner("Searching for indirect evidence paths..."):
+        st.session_state.trace_result = find_connection_paths(
+            selected_id,
+            target_options[target_label],
+            max_hops=max_hops,
+        )
+
+if "trace_result" in st.session_state:
+    trace_result = st.session_state.trace_result
+
+    st.subheader("Multi-hop connection tracing")
+    st.caption(
+        "Each hop represents a transition between reports "
+        "through a shared graph entity."
+    )
+
+    if trace_result["found"]:
+        for index, path in enumerate(trace_result["paths"], start=1):
+            with st.expander(
+                f"Path {index}: {' → '.join(path['report_ids'])}",
+                expanded=True,
+            ):
+                st.write(f"**Number of hops:** {path['hops']}")
+
+                for step_number, step in enumerate(
+                    path["steps"], start=1
+                ):
+                    st.write(
+                        f"{step_number}. **{step['from_report']}** "
+                        f"shares a {step['entity_type']} with "
+                        f"**{step['to_report']}**"
+                    )
+                    st.caption(
+                        f"Shared entity: {step['shared_entity']}"
+                    )
+    else:
+        st.info(trace_result["message"])
+
+# Structured pattern matching
+if run_patterns:
+    with st.spinner("Comparing scam patterns..."):
+        st.session_state.pattern_result = find_pattern_matches(
+            selected_id,
+            min_score=40,
+        )
+
+if "pattern_result" in st.session_state:
+    pattern_result = st.session_state.pattern_result
+
+    st.subheader("Potential pattern matches")
+    st.caption(
+        "Heuristic similarity based on scam type, tactics, "
+        "and payment sequence. Similarity does not prove "
+        "common ownership or criminal activity."
+    )
+
+    if pattern_result["matches"]:
+        pattern_df = pd.DataFrame(pattern_result["matches"])
+
+        st.dataframe(
+            pattern_df,
+            width="stretch",
+            hide_index=True,
+        )
+    else:
+        st.info("No candidate pattern matches met the threshold.")
+
+    st.caption(pattern_result["message"])
 with st.expander("Investigation methodology"):
     st.write(
         "ScamTrace AI finds reports connected through shared graph entities. "
