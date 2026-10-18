@@ -11,7 +11,7 @@ from investigator import (
     find_pattern_matches,
 )
 from evidence_engine import evaluate_evidence
-
+from nlp_engine import find_text_similar_reports
 
 st.set_page_config(
     page_title="ScamTrace AI",
@@ -181,6 +181,10 @@ with st.sidebar:
         list(report_options.keys()),
     )
     selected_id = report_options[selected_label]
+    run_text_similarity = st.button(
+    "Compare complaint text",
+    width="stretch",
+)
     st.divider()
     st.subheader("Trace a connection")
 
@@ -390,6 +394,60 @@ if "pattern_result" in st.session_state:
         st.info("No candidate pattern matches met the threshold.")
 
     st.caption(pattern_result["message"])
+
+# NLP complaint text similarity
+
+if run_text_similarity:
+    with st.spinner("Comparing complaint text using TF-IDF..."):
+        result = find_text_similar_reports(
+            report_id=selected_id,
+            min_similarity=0.05,
+            max_results=10,
+        )
+
+        # Store which report was compared to avoid showing stale results.
+        st.session_state["text_similarity_result"] = {
+            "source_report_id": selected_id,
+            "result": result,
+        }
+
+saved_text_result = st.session_state.get("text_similarity_result")
+
+# Display results only for the currently selected report.
+if (
+    saved_text_result
+    and saved_text_result["source_report_id"] == selected_id
+):
+    text_result = saved_text_result["result"]
+
+    st.subheader("NLP complaint similarity")
+
+    st.caption(
+        "Uses TF-IDF and cosine similarity to identify reports "
+        "with similar wording. These are leads for investigation, "
+        "not proof of fraud or common ownership."
+    )
+
+    if not text_result["found"]:
+        st.warning(text_result["message"])
+
+    elif text_result["matches"]:
+        text_df = pd.DataFrame(text_result["matches"])
+
+        st.dataframe(
+            text_df,
+            width="stretch",
+            hide_index=True,
+        )
+
+    else:
+        st.info(
+            "No reports met the textual similarity threshold. "
+            "Try reviewing the descriptions or adjusting the threshold."
+        )
+
+    st.caption(text_result["message"])
+
 with st.expander("Investigation methodology"):
     st.write(
         "ScamTrace AI finds reports connected through shared graph entities. "
